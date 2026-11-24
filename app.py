@@ -13,7 +13,7 @@ from langchain_core.messages import AIMessage, HumanMessage
 from langchain_core.prompts import ChatPromptTemplate, MessagesPlaceholder
 from langchain_nvidia_ai_endpoints import ChatNVIDIA, NVIDIAEmbeddings
 from langchain_text_splitters import RecursiveCharacterTextSplitter
-from langchain_unstructured import UnstructuredLoader
+from langchain_community.document_loaders import PyPDFLoader
 
 load_dotenv()
 
@@ -148,7 +148,7 @@ def build_or_load_store(data: bytes, filename: str, status) -> tuple[Chroma, int
         tmp.write(data)
         tmp_path = tmp.name
     try:
-        docs = UnstructuredLoader(tmp_path).load()
+        docs = PyPDFLoader(tmp_path).load()
     finally:
         os.remove(tmp_path)
 
@@ -211,7 +211,7 @@ def retrieve(store: Chroma, queries: list[str], k: int):
 def to_sources(docs):
     return [
         {
-            "page": d.metadata.get("page_number"),
+            "page": d.metadata.get("page_number") or (d.metadata["page"] + 1 if isinstance(d.metadata.get("page"), int) else None),
             "text": d.page_content.strip()[:400] + ("…" if len(d.page_content) > 400 else ""),
         }
         for d in docs
@@ -242,12 +242,13 @@ with st.sidebar:
 
         if st.session_state.get("doc_hash") != new_hash:
             # A different file than the one currently loaded: index it.
+            error = None
             with st.status("Preparing document…", expanded=False) as status:
                 try:
                     store, n = build_or_load_store(data, uploaded.name, status)
                 except Exception as e:
+                    error = f"{type(e).__name__}: {e}"
                     status.update(label="Could not process this PDF", state="error")
-                    st.error(str(e))
                 else:
                     st.session_state.update(
                         store=store,
@@ -257,6 +258,8 @@ with st.sidebar:
                         messages=[],  # new document, fresh conversation
                     )
                     status.update(label="Ready", state="complete")
+            if error:
+                st.error(error)
 
     if st.session_state.get("store"):
         st.markdown(

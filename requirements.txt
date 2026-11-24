@@ -1,20 +1,8 @@
-# UI
 streamlit
-
-# Environment variables
 python-dotenv
-
-# LangChain
 langchain-core
 langchain-community
 langchain-text-splitters
-langchain-unstructured
 langchain-nvidia-ai-endpoints
-
-# Vector database
 chromadb
-
-# PDF parsing (used by UnstructuredLoader)
-unstructured[pdf]
-
-opencv-python-headless
+pypdf
