@@ -16,3 +16,5 @@ chromadb
 
 # PDF parsing (used by UnstructuredLoader)
 unstructured[pdf]
+
+opencv-python-headless
